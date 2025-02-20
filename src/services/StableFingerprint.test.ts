@@ -31,19 +31,6 @@ const mockCanvas = {
   height: 0,
 };
 
-const mockCanvasContext = {
-  fillStyle: '',
-  fillRect: jest.fn(),
-  fillText: jest.fn(),
-  textBaseline: '',
-  beginPath: jest.fn(),
-  arc: jest.fn(),
-  stroke: jest.fn(),
-  moveTo: jest.fn(),
-  bezierCurveTo: jest.fn(),
-  createLinearGradient: jest.fn(),
-};
-
 const mockWebGLContext = {
   getExtension: jest.fn(),
   getParameter: jest.fn(),

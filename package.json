@@ -1,14 +1,27 @@
 {
-  "name": "tracejs",
+  "name": "fingerprinterjs",
   "version": "1.0.0",
   "description": "A modern, privacy-conscious alternative to browser fingerprinting for unique user identification.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ElhamDevelopmentStudio/tracejs.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
     "prepare": "npm run build",
     "prepublishOnly": "npm test && npm run lint"
   },
@@ -31,6 +44,6 @@
     "jest-environment-jsdom": "^29.7.0",
     "ts-jest": "^29.1.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.1.6"
   }
 }
