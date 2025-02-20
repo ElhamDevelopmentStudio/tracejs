@@ -1,6 +1,6 @@
 {
   "name": "fingerprinterjs",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A modern, privacy-conscious alternative to browser fingerprinting for unique user identification.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
