@@ -1,5 +1,5 @@
 {
-  "name": "fingerprinterjs",
+  "name": "@elhamdev/tracejs",
   "version": "1.0.1",
   "description": "A modern, privacy-conscious alternative to browser fingerprinting for unique user identification.",
   "main": "dist/index.js",
@@ -11,7 +11,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/ElhamDevelopmentStudio/tracejs.git"
+    "url": "git+https://github.com/ElhamDevelopmentStudio/tracejs.git"
   },
   "publishConfig": {
     "access": "public"
