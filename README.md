@@ -3,7 +3,7 @@
 A modern, privacy-conscious alternative to browser fingerprinting for unique user identification. TraceJS provides a robust and ethical approach to device identification while respecting user privacy.
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![npm version](https://badge.fury.io/js/browser-tracejs.svg)](https://badge.fury.io/js/browser-tracejs)
+[![npm version](https://badge.fury.io/js/@elhamdev/tracejs.svg)](https://badge.fury.io/js/@elhamdev/tracejs)
 
 ## Features
 
@@ -22,13 +22,13 @@ A modern, privacy-conscious alternative to browser fingerprinting for unique use
 Install TraceJS using npm:
 
 ```bash
-npm install browser-tracejs
+npm install @elhamdev/tracejs
 ```
 
 Or using yarn:
 
 ```bash
-yarn add browser-tracejs
+yarn add @elhamdev/tracejs
 ```
 
 ## Usage
