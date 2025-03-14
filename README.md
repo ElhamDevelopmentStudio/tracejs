@@ -63,6 +63,52 @@ const options = {
 const fingerprintService = new FingerprintService(options);
 ```
 
+### Advanced Customization
+
+TraceJS now provides enhanced customization capabilities for specific fingerprinting modules.
+
+#### Battery Fingerprinting Options
+
+Control exactly which battery data is collected and how it's processed:
+
+```typescript
+import { FingerprintService, BatteryOptions, BatteryData } from 'tracejs';
+
+const batteryOptions: BatteryOptions = {
+  // Select which properties to include (all true by default)
+  includeCharging: true,
+  includeLevel: true,
+  includeChargingTime: true,
+  includeDischargingTime: true,
+  
+  // Privacy enhancement - round battery level to nearest 10%
+  anonymizeLevel: true,
+  
+  // Enable real-time battery status tracking
+  trackStatusChanges: true,
+  
+  // Optional callback for battery changes
+  onBatteryChange: (batteryData: BatteryData) => {
+    console.log('Battery status changed:', batteryData);
+  },
+  
+  // Override the fingerprint strength score (optional)
+  customStrengthScore: 5
+};
+
+const fingerprintService = new FingerprintService({
+  battery: batteryOptions
+});
+
+// Alternatively, you can listen for battery changes after initialization
+const removeListener = fingerprintService.onBatteryChange((batteryData: BatteryData) => {
+  console.log('Battery update:', batteryData);
+});
+
+// Later, to stop listening:
+removeListener();
+```
+
 ## API Documentation
 
 ### FingerprintService
@@ -73,7 +119,7 @@ constructor(options: FingerprintOptions = {})
 ```
 
 Options:
-- `battery`: boolean (default: true) - Enable/disable battery fingerprinting
+- `battery`: boolean | BatteryOptions (default: true) - Enable/disable battery fingerprinting or customize it
 - `screen`: boolean (default: true) - Enable/disable screen fingerprinting
 
 #### Methods
@@ -96,6 +142,44 @@ Returns detailed information about the fingerprint, including:
 - The fingerprint hash
 - Collected characteristics
 - Fingerprint strength assessment
+
+##### onBatteryChange()
+```typescript
+onBatteryChange(listener: (data: BatteryData) => void): (() => void) | null
+```
+Registers a listener for battery status changes. Returns a function to remove the listener, or null if battery fingerprinting is disabled.
+
+### BatteryOptions
+
+Configure the battery fingerprinting module:
+
+```typescript
+interface BatteryOptions {
+  // Which battery properties to include in fingerprinting
+  includeCharging?: boolean;      // Include charging status
+  includeLevel?: boolean;         // Include battery level
+  includeChargingTime?: boolean;  // Include time until fully charged
+  includeDischargingTime?: boolean; // Include time until battery depleted
+  
+  // Optional anonymization settings
+  anonymizeLevel?: boolean;       // Round battery level to nearest 10%
+  
+  // Event tracking options
+  trackStatusChanges?: boolean;   // Track battery status changes
+  onBatteryChange?: (batteryData: BatteryData) => void; // Callback for changes
+  
+  // Custom strength scoring
+  customStrengthScore?: number;   // Override default strength score
+}
+
+// The BatteryData type provides a type-safe structure for battery information
+interface BatteryData {
+  charging?: boolean;             // Whether the device is charging
+  level?: number;                 // Battery level between 0 and 1
+  chargingTime?: number;          // Seconds until fully charged
+  dischargingTime?: number;       // Seconds until battery depleted
+}
+```
 
 ### BrowserCharacteristics
 
