@@ -13,9 +13,14 @@ A modern, privacy-conscious alternative to browser fingerprinting for unique use
 - 🌐 Browser and OS information gathering
 - 🎵 Audio capabilities fingerprinting
 - 📊 Detailed fingerprint strength scoring
-- ⚡ Asynchronous and performant
-- 🛡️ TypeScript support
+- 🧪 Real-time entropy analysis
+- 🔍 Behavioral fingerprinting
 - 📱 Cross-browser compatibility
+- 🛡️ GDPR/CCPA compliant consent management
+- ⚡ Asynchronous and performant
+- 📖 TypeScript support
+- 🔄 **Consistent fingerprinting** for authentication workflows
+- 💾 Smart caching system for stable identification
 
 ## Installation
 
@@ -109,6 +114,172 @@ const removeListener = fingerprintService.onBatteryChange((batteryData: BatteryD
 removeListener();
 ```
 
+#### Behavioral Fingerprinting
+
+TraceJS can now create fingerprints based on user behavior patterns, providing much stronger identification:
+
+```typescript
+import { FingerprintService, BehaviorOptions, BehaviorProfile } from 'tracejs';
+
+const behaviorOptions: BehaviorOptions = {
+  // Enable specific tracking methods
+  trackMouse: true,
+  trackKeyboard: true,
+  trackTouch: true,
+  
+  // Configure privacy level
+  privacyMode: 'balanced', // 'minimal', 'balanced', or 'full'
+  
+  // Configure data collection
+  sampleRate: 100, // milliseconds between samples
+  trainingDuration: 10000, // how long to collect data before generating profile (ms)
+  
+  // Receive updates when profile is created
+  onProfileUpdate: (profile: BehaviorProfile) => {
+    console.log('User behavior profile updated:', profile);
+  }
+};
+
+const fingerprintService = new FingerprintService({
+  behavior: behaviorOptions
+});
+
+// Or listen for profile updates separately
+const cleanup = fingerprintService.onBehaviorProfileUpdate((profile) => {
+  console.log('New behavior profile:', profile);
+  
+  // Access specific metrics
+  if (profile.mouse?.averageSpeed) {
+    console.log('Mouse speed:', profile.mouse.averageSpeed);
+  }
+  
+  if (profile.keyboard?.typingSpeed) {
+    console.log('Typing speed:', profile.keyboard.typingSpeed);
+  }
+});
+
+// Call cleanup when done to remove event listeners
+cleanup();
+```
+
+#### Entropy Analysis
+
+Assess the quality and uniqueness of your fingerprint:
+
+```typescript
+import { FingerprintService } from 'tracejs';
+
+const fingerprintService = new FingerprintService();
+
+// Generate a fingerprint
+const fingerprint = await fingerprintService.generateFingerprint();
+
+// Analyze its entropy and uniqueness
+const analysis = await fingerprintService.analyzeFingerprint();
+console.log(`Entropy: ${analysis.entropyBits} bits`);
+console.log(`Quality: ${analysis.quality.rating}`);
+console.log(`Description: ${analysis.quality.description}`);
+
+// Adjust your fingerprinting methods based on the analysis
+if (analysis.entropyBits < 40) {
+  console.log('Consider enabling additional fingerprinting methods for stronger identification');
+}
+```
+
+#### Consistent Fingerprinting for Authentication
+
+TraceJS provides fingerprint consistency suitable for authentication workflows:
+
+```typescript
+import { FingerprintService } from 'tracejs';
+
+// Initialize the fingerprint service
+const fingerprintService = new FingerprintService();
+
+// On user login, generate a fingerprint
+const loginFingerprint = await fingerprintService.generateFingerprint();
+console.log('Login Fingerprint:', loginFingerprint);
+
+// Send to your backend along with credentials
+await loginUser(username, password, loginFingerprint);
+
+// Later, on the same device (even days/weeks later)
+// The fingerprint will remain consistent
+const logoutFingerprint = await fingerprintService.generateFingerprint();
+console.log('Logout Fingerprint:', logoutFingerprint);
+// loginFingerprint === logoutFingerprint (unless hardware/browser changes significantly)
+
+// Use for logout authentication
+await logoutUser(sessionToken, logoutFingerprint);
+```
+
+How the consistency system works:
+- Fingerprints are cached locally for 30 days by default
+- Behavioral profiles remain stable between sessions
+- Hardware-specific characteristics provide long-term stability
+- Cache is safely invalidated if hardware or browser changes significantly
+- Origin-specific cache keys prevent cross-site tracking
+
+#### Consent Management
+
+Ensure GDPR, CCPA, and other privacy regulation compliance:
+
+```typescript
+import { FingerprintService, ConsentOptions, ConsentCategory } from 'tracejs';
+
+const consentOptions: ConsentOptions = {
+  // Automatically detect user's region based on locale
+  autoDetectRegion: true,
+  
+  // Map fingerprinting methods to consent categories
+  categoryMapping: {
+    battery: 'functionality',
+    screen: 'functionality',
+    canvas: 'analytics',
+    audio: 'analytics', 
+    behavior: 'personalization'
+  },
+  
+  // Define required categories that don't need consent
+  requiredCategories: ['essential'],
+  
+  // Get notifications when consent changes
+  onConsentChange: (categories) => {
+    console.log('Consent updated:', categories);
+  }
+};
+
+const fingerprintService = new FingerprintService({
+  battery: true,
+  screen: true,
+  behavior: true,
+  consent: consentOptions
+});
+
+// Get the consent manager to interact with it
+const consentManager = fingerprintService.getConsentManager();
+
+// Check if consent has expired
+if (consentManager?.needsConsentRenewal()) {
+  // Show consent UI to user
+  showConsentForm();
+}
+
+// Update consent when user makes choices
+function onUserConsentFormSubmit(choices) {
+  consentManager?.updateMultipleConsent({
+    functionality: choices.includes('functionality'),
+    analytics: choices.includes('analytics'),
+    advertising: choices.includes('advertising'),
+    personalization: choices.includes('personalization')
+  });
+}
+
+// Get current consent state
+const consentState = consentManager?.getConsentState();
+console.log('Current consent:', consentState);
+```
+
 ## API Documentation
 
 ### FingerprintService
@@ -197,6 +368,28 @@ The following characteristics may be collected:
 - `canvas`: Canvas fingerprint
 - `audio`: Audio capabilities
 - And more...
+
+### Caching Utilities
+
+TraceJS provides utilities to maintain consistency in fingerprints:
+
+```typescript
+// These are typically used internally, but can be accessed for custom implementations
+import { saveToCache, getFromCache, generateCacheKey } from 'tracejs/utils/cache';
+
+// Generate a consistent cache key for your application
+const cacheKey = generateCacheKey('my_feature');
+
+// Save data to the cache (persists for 30 days by default)
+saveToCache(cacheKey, { userData: 'example' });
+
+// Retrieve cached data
+const cachedData = getFromCache(cacheKey);
+console.log(cachedData); // { userData: 'example' } or null if expired/not found
+
+// Retrieve with custom validity period (in milliseconds)
+const cachedDataWithCustomValidity = getFromCache(cacheKey, 60 * 60 * 1000); // 1 hour
+```
 
 ## Privacy Considerations
 

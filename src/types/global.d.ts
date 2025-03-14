@@ -6,6 +6,11 @@ interface Navigator {
     chargingTime: number;
     dischargingTime: number;
   }>;
+  /**
+   * Legacy property for user's selected language, mainly used in older IE versions
+   * @deprecated Modern browsers use navigator.language instead
+   */
+  userLanguage?: string;
 }
 
 interface Window {

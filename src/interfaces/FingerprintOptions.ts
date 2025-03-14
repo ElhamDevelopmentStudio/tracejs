@@ -1,9 +1,13 @@
+import { BehaviorOptions } from "../services/BehaviorFingerprint";
 import { BatteryData } from "../types/battery";
+import { ConsentOptions } from "./ConsentOptions";
 
 export interface FingerprintOptions {
   battery?: boolean | BatteryOptions;
   canvas?: boolean;
   screen?: boolean;
+  behavior?: boolean | BehaviorOptions;
+  consent?: ConsentOptions;
   // Add other options as needed
 }
 
