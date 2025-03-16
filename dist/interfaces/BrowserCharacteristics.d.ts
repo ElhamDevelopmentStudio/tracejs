@@ -26,6 +26,7 @@ export interface BrowserCharacteristics {
     screen?: string;
     colorScheme?: string[];
     colorGamut?: string;
+    behaviorProfile?: string;
 }
 export interface FingerprintStrength {
     score: number;
