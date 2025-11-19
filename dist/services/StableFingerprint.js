@@ -1,25 +1,28 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StableFingerprint = void 0;
+const environment_1 = require("../utils/environment");
 const BaseFingerprint_1 = require("./BaseFingerprint");
 class StableFingerprint extends BaseFingerprint_1.BaseFingerprint {
     async getCharacteristics() {
         try {
+            const nav = (0, environment_1.getNavigator)();
+            const win = (0, environment_1.getGlobalWindow)();
             const stableData = {
                 // Browser/OS specific - doesn't change during session
-                userAgent: navigator.userAgent,
-                platform: navigator.platform,
-                language: navigator.language,
-                hardwareConcurrency: navigator.hardwareConcurrency,
-                deviceMemory: navigator.deviceMemory,
+                userAgent: nav?.userAgent,
+                platform: nav?.platform,
+                language: nav?.language,
+                hardwareConcurrency: nav?.hardwareConcurrency,
+                deviceMemory: nav?.deviceMemory,
                 // Timezone - stable during session
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                 // Hardware capabilities - stable
-                touchPoints: navigator.maxTouchPoints,
+                touchPoints: nav?.maxTouchPoints,
                 // Screen properties that don't change with multiple monitors
-                colorDepth: window.screen.colorDepth,
-                pixelDepth: window.screen.pixelDepth,
-                devicePixelRatio: window.devicePixelRatio,
+                colorDepth: win?.screen?.colorDepth,
+                pixelDepth: win?.screen?.pixelDepth,
+                devicePixelRatio: win?.devicePixelRatio,
                 // WebGL information - hardware specific
                 ...await this.getWebGLInfo(),
                 // Audio capabilities - hardware specific
@@ -36,7 +39,11 @@ class StableFingerprint extends BaseFingerprint_1.BaseFingerprint {
     }
     async getWebGLInfo() {
         try {
-            const canvas = document.createElement('canvas');
+            const doc = (0, environment_1.getDocument)();
+            if (!doc?.createElement) {
+                return {};
+            }
+            const canvas = doc.createElement('canvas');
             const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
             if (gl) {
                 const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
@@ -55,7 +62,12 @@ class StableFingerprint extends BaseFingerprint_1.BaseFingerprint {
     }
     async getAudioInfo() {
         try {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const win = (0, environment_1.getGlobalWindow)();
+            const AudioContextCtor = win?.AudioContext || win?.webkitAudioContext;
+            if (!AudioContextCtor) {
+                return {};
+            }
+            const audioContext = new AudioContextCtor();
             const sampleRate = audioContext.sampleRate;
             audioContext.close();
             return {
@@ -69,7 +81,11 @@ class StableFingerprint extends BaseFingerprint_1.BaseFingerprint {
     }
     async getCanvasInfo() {
         try {
-            const canvas = document.createElement('canvas');
+            const doc = (0, environment_1.getDocument)();
+            if (!doc?.createElement) {
+                return {};
+            }
+            const canvas = doc.createElement('canvas');
             const ctx = canvas.getContext('2d');
             if (!ctx)
                 return {};

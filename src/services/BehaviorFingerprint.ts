@@ -9,6 +9,7 @@ import {
   TouchMetrics,
 } from "../types/behavior";
 import { generateCacheKey, getFromCache, saveToCache } from "../utils/cache";
+import { getGlobalWindow } from "../utils/environment";
 import { BaseFingerprint } from "./BaseFingerprint";
 
 export interface BehaviorOptions {
@@ -80,6 +81,7 @@ export class BehaviorFingerprint extends BaseFingerprint {
   private cachedProfile: string | null = null;
   private profileTimestamp = 0;
   private readonly PROFILE_VALIDITY_PERIOD = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
+  private readonly hasBrowserContext: boolean;
 
   constructor(options: BehaviorOptions = {}) {
     super();
@@ -100,8 +102,14 @@ export class BehaviorFingerprint extends BaseFingerprint {
       ...options,
     };
 
+    this.hasBrowserContext = !!getGlobalWindow();
+
     // Try to load cached profile from storage
     this.loadCachedProfile();
+
+    if (!this.hasBrowserContext) {
+      this.profileReady = true;
+    }
   }
 
   /**
@@ -143,6 +151,12 @@ export class BehaviorFingerprint extends BaseFingerprint {
   public initialize(): void {
     if (this.initialized) return;
     this.initialized = true;
+
+    if (!this.hasBrowserContext) {
+      this.profileReady = true;
+      return;
+    }
+
     this.dataCollectionStartTime = Date.now();
 
     // Set up event listeners
@@ -168,31 +182,40 @@ export class BehaviorFingerprint extends BaseFingerprint {
   public cleanup(): void {
     if (!this.initialized) return;
 
-    // Remove event listeners
-    if (this.mouseMoveHandler) {
-      window.removeEventListener("mousemove", this.mouseMoveHandler);
+    const win = getGlobalWindow();
+
+    if (win) {
+      if (this.mouseMoveHandler) {
+        win.removeEventListener("mousemove", this.mouseMoveHandler);
+        this.mouseMoveHandler = null;
+      }
+
+      if (this.mouseClickHandler) {
+        win.removeEventListener("mousedown", this.mouseClickHandler);
+        this.mouseClickHandler = null;
+      }
+
+      if (this.keyDownHandler) {
+        win.removeEventListener("keydown", this.keyDownHandler);
+        this.keyDownHandler = null;
+      }
+
+      if (this.keyUpHandler) {
+        win.removeEventListener("keyup", this.keyUpHandler);
+        this.keyUpHandler = null;
+      }
+
+      if (this.touchHandler) {
+        win.removeEventListener("touchstart", this.touchHandler);
+        win.removeEventListener("touchmove", this.touchHandler);
+        win.removeEventListener("touchend", this.touchHandler);
+        this.touchHandler = null;
+      }
+    } else {
       this.mouseMoveHandler = null;
-    }
-
-    if (this.mouseClickHandler) {
-      window.removeEventListener("mousedown", this.mouseClickHandler);
       this.mouseClickHandler = null;
-    }
-
-    if (this.keyDownHandler) {
-      window.removeEventListener("keydown", this.keyDownHandler);
       this.keyDownHandler = null;
-    }
-
-    if (this.keyUpHandler) {
-      window.removeEventListener("keyup", this.keyUpHandler);
       this.keyUpHandler = null;
-    }
-
-    if (this.touchHandler) {
-      window.removeEventListener("touchstart", this.touchHandler);
-      window.removeEventListener("touchmove", this.touchHandler);
-      window.removeEventListener("touchend", this.touchHandler);
       this.touchHandler = null;
     }
 
@@ -200,6 +223,9 @@ export class BehaviorFingerprint extends BaseFingerprint {
   }
 
   private setupMouseTracking(): void {
+    const win = getGlobalWindow();
+    if (!win) return;
+
     let lastSample = 0;
 
     this.mouseMoveHandler = (e: MouseEvent) => {
@@ -224,11 +250,14 @@ export class BehaviorFingerprint extends BaseFingerprint {
       });
     };
 
-    window.addEventListener("mousemove", this.mouseMoveHandler);
-    window.addEventListener("mousedown", this.mouseClickHandler);
+    win.addEventListener("mousemove", this.mouseMoveHandler);
+    win.addEventListener("mousedown", this.mouseClickHandler);
   }
 
   private setupKeyboardTracking(): void {
+    const win = getGlobalWindow();
+    if (!win) return;
+
     this.keyDownHandler = (e: KeyboardEvent) => {
       // Don't track actual key values in balanced or minimal privacy modes
       if (
@@ -267,11 +296,14 @@ export class BehaviorFingerprint extends BaseFingerprint {
       }
     };
 
-    window.addEventListener("keydown", this.keyDownHandler);
-    window.addEventListener("keyup", this.keyUpHandler);
+    win.addEventListener("keydown", this.keyDownHandler);
+    win.addEventListener("keyup", this.keyUpHandler);
   }
 
   private setupTouchTracking(): void {
+    const win = getGlobalWindow();
+    if (!win) return;
+
     let lastSample = 0;
 
     this.touchHandler = (e: TouchEvent) => {
@@ -293,9 +325,9 @@ export class BehaviorFingerprint extends BaseFingerprint {
       }
     };
 
-    window.addEventListener("touchstart", this.touchHandler);
-    window.addEventListener("touchmove", this.touchHandler);
-    window.addEventListener("touchend", this.touchHandler);
+    win.addEventListener("touchstart", this.touchHandler);
+    win.addEventListener("touchmove", this.touchHandler);
+    win.addEventListener("touchend", this.touchHandler);
   }
 
   private calculateMouseMetrics(): MouseMetrics {
@@ -463,6 +495,15 @@ export class BehaviorFingerprint extends BaseFingerprint {
   }
 
   async getCharacteristics(): Promise<Partial<BrowserCharacteristics>> {
+    if (!this.hasBrowserContext) {
+      if (this.cachedProfile) {
+        return {
+          behaviorProfile: this.cachedProfile,
+        };
+      }
+      return {};
+    }
+
     // If we already have a cached profile, use it for consistency
     if (this.cachedProfile) {
       return {
@@ -510,6 +551,13 @@ export class BehaviorFingerprint extends BaseFingerprint {
       return {
         score: 0,
         details: ["Behavior profile not yet available"],
+      };
+    }
+
+    if (!this.hasBrowserContext) {
+      return {
+        score: 0,
+        details: ["Behavior fingerprinting unavailable in this environment"],
       };
     }
 

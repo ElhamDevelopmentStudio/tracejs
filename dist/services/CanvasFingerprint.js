@@ -1,11 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CanvasFingerprint = void 0;
+const environment_1 = require("../utils/environment");
 const BaseFingerprint_1 = require("./BaseFingerprint");
 class CanvasFingerprint extends BaseFingerprint_1.BaseFingerprint {
     async getCharacteristics() {
         try {
-            const canvas = document.createElement('canvas');
+            const doc = (0, environment_1.getDocument)();
+            if (!doc?.createElement) {
+                return {};
+            }
+            const canvas = doc.createElement('canvas');
             const ctx = canvas.getContext('2d');
             if (!ctx)
                 return {};

@@ -1,6 +1,7 @@
 import { BrowserCharacteristics, FingerprintStrength } from '../interfaces/BrowserCharacteristics';
 import { BatteryOptions } from "../interfaces/FingerprintOptions";
 import { BatteryData, BatteryManager, Navigator } from "../types/battery";
+import { getNavigator } from "../utils/environment";
 import { BaseFingerprint } from "./BaseFingerprint";
 
 export class BatteryFingerprint extends BaseFingerprint {
@@ -27,24 +28,27 @@ export class BatteryFingerprint extends BaseFingerprint {
   }
 
   private async initBatteryTracking(): Promise<void> {
-    try {
-      if ("getBattery" in navigator) {
-        this.batteryManager = await (navigator as Navigator).getBattery();
+    const nav = getNavigator() as Navigator | null;
+    if (!nav || typeof nav.getBattery !== "function") {
+      return;
+    }
 
-        // Set up event listeners for battery changes
-        this.batteryManager.addEventListener("chargingchange", () =>
-          this.handleBatteryChange()
-        );
-        this.batteryManager.addEventListener("levelchange", () =>
-          this.handleBatteryChange()
-        );
-        this.batteryManager.addEventListener("chargingtimechange", () =>
-          this.handleBatteryChange()
-        );
-        this.batteryManager.addEventListener("dischargingtimechange", () =>
-          this.handleBatteryChange()
-        );
-      }
+    try {
+      this.batteryManager = await nav.getBattery();
+
+      // Set up event listeners for battery changes
+      this.batteryManager.addEventListener("chargingchange", () =>
+        this.handleBatteryChange()
+      );
+      this.batteryManager.addEventListener("levelchange", () =>
+        this.handleBatteryChange()
+      );
+      this.batteryManager.addEventListener("chargingtimechange", () =>
+        this.handleBatteryChange()
+      );
+      this.batteryManager.addEventListener("dischargingtimechange", () =>
+        this.handleBatteryChange()
+      );
     } catch (e) {
       console.error("Battery tracking initialization failed:", e);
     }
@@ -73,7 +77,8 @@ export class BatteryFingerprint extends BaseFingerprint {
     this.batteryChangeListeners.push(listener);
 
     // Initialize tracking if it wasn't already
-    if (!this.batteryManager && "getBattery" in navigator) {
+    const nav = getNavigator() as Navigator | null;
+    if (!this.batteryManager && nav && typeof nav.getBattery === "function") {
       this.initBatteryTracking();
     }
 
@@ -114,22 +119,25 @@ export class BatteryFingerprint extends BaseFingerprint {
   }
 
   async getCharacteristics(): Promise<Partial<BrowserCharacteristics>> {
+    const nav = getNavigator() as Navigator | null;
+    if (!nav || typeof nav.getBattery !== "function") {
+      return {};
+    }
+
     try {
-      if ("getBattery" in navigator) {
-        const battery = await (navigator as Navigator).getBattery();
-        this.batteryManager = battery; // Store for future use
+      const battery = await nav.getBattery();
+      this.batteryManager = battery; // Store for future use
 
-        const batteryData = this.getBatteryData();
+      const batteryData = this.getBatteryData();
 
-        // Return null if no data was collected
-        if (Object.keys(batteryData).length === 0) {
-          return {};
-        }
-
-        return {
-          battery: JSON.stringify(batteryData),
-        };
+      // Return null if no data was collected
+      if (Object.keys(batteryData).length === 0) {
+        return {};
       }
+
+      return {
+        battery: JSON.stringify(batteryData),
+      };
     } catch (e) {
       console.error("Battery fingerprinting failed:", e);
     }

@@ -1,10 +1,16 @@
 import { BrowserCharacteristics, FingerprintStrength } from '../interfaces/BrowserCharacteristics';
+import { getDocument } from "../utils/environment";
 import { BaseFingerprint } from './BaseFingerprint';
 
 export class CanvasFingerprint extends BaseFingerprint {
   protected async getCharacteristics(): Promise<Partial<BrowserCharacteristics>> {
     try {
-      const canvas = document.createElement('canvas');
+      const doc = getDocument();
+      if (!doc?.createElement) {
+        return {};
+      }
+
+      const canvas = doc.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
       if (!ctx) return {};

@@ -5,6 +5,7 @@ import { ConsentOptions } from "./ConsentOptions";
 export interface FingerprintOptions {
   battery?: boolean | BatteryOptions;
   canvas?: boolean;
+  stable?: boolean;
   screen?: boolean;
   behavior?: boolean | BehaviorOptions;
   consent?: ConsentOptions;
