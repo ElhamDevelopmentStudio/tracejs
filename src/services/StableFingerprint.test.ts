@@ -2,7 +2,8 @@ import '@testing-library/jest-dom';
 import { StableFingerprint } from './StableFingerprint';
 
 // Mock browser APIs
-const mockNavigator = {
+type MockNavigator = Partial<Navigator> & { deviceMemory?: number; getBattery: jest.Mock };
+const mockNavigator: MockNavigator = {
   userAgent: '',
   platform: '',
   language: '',
@@ -12,19 +13,33 @@ const mockNavigator = {
   getBattery: jest.fn(),
 };
 
-const mockScreen = {
+const mockScreen: Partial<Screen> = {
   colorDepth: 24,
   pixelDepth: 24,
 };
 
-const mockWindow = {
+type MockWindow = Partial<Window> & {
+  devicePixelRatio: number;
+  screen: Partial<Screen>;
+  AudioContext: jest.Mock;
+  matchMedia: jest.Mock;
+};
+
+const mockWindow: MockWindow = {
   devicePixelRatio: 1,
   screen: mockScreen,
   AudioContext: jest.fn(),
   matchMedia: jest.fn(),
 };
 
-const mockCanvas = {
+type MockCanvas = Partial<HTMLCanvasElement> & {
+  getContext: jest.Mock;
+  toDataURL: jest.Mock;
+  width: number;
+  height: number;
+};
+
+const mockCanvas: MockCanvas = {
   getContext: jest.fn(),
   toDataURL: jest.fn(),
   width: 0,
@@ -44,11 +59,11 @@ describe('StableFingerprint', () => {
     jest.clearAllMocks();
     
     // Setup global mocks
-    global.navigator = mockNavigator as any;
-    global.window = mockWindow as any;
+    global.navigator = mockNavigator as unknown as Navigator;
+    global.window = mockWindow as unknown as Window;
     global.document = {
       createElement: jest.fn().mockReturnValue(mockCanvas),
-    } as any;
+    } as unknown as Document;
     
     stableFingerprint = new StableFingerprint();
   });
@@ -185,7 +200,7 @@ describe('StableFingerprint', () => {
 
   describe('Error Handling', () => {
     test('should handle missing navigator properties', async () => {
-      global.navigator = {} as any;
+      global.navigator = {} as unknown as Navigator;
       const result = await stableFingerprint.getFingerprint();
       expect(result).toBeTruthy();
     });

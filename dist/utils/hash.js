@@ -27,7 +27,8 @@ const getSubtleCrypto = () => {
     if (!cryptoObj) {
         return null;
     }
-    const subtle = cryptoObj.subtle || cryptoObj.webkitSubtle;
+    const extendedCrypto = cryptoObj;
+    const subtle = extendedCrypto.subtle || extendedCrypto.webkitSubtle;
     return typeof subtle?.digest === "function" ? subtle : null;
 };
 const encodeToBuffer = (value) => {
@@ -36,7 +37,7 @@ const encodeToBuffer = (value) => {
     }
     const utf8 = [];
     for (let i = 0; i < value.length; i++) {
-        let charCode = value.charCodeAt(i);
+        const charCode = value.charCodeAt(i);
         if (charCode < 0x80) {
             utf8.push(charCode);
         }
