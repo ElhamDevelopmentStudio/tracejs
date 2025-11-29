@@ -5,12 +5,14 @@ import {
 } from "./interfaces/FingerprintOptions";
 import { BaseFingerprint } from "./services/BaseFingerprint";
 import { BatteryFingerprint } from "./services/BatteryFingerprint";
+import { CanvasFingerprint } from "./services/CanvasFingerprint";
 import {
   BehaviorFingerprint,
   BehaviorOptions,
 } from "./services/BehaviorFingerprint";
 import { ConsentManager } from "./services/ConsentManager";
 import { ScreenFingerprint } from "./services/ScreenFingerprint";
+import { StableFingerprint } from "./services/StableFingerprint";
 import { BatteryData } from "./types/battery";
 import { BehaviorProfile } from "./types/behavior";
 import { generateCacheKey, getFromCache, saveToCache } from "./utils/cache";
@@ -78,6 +80,16 @@ export class FingerprintService {
     // Initialize Screen fingerprinting
     if (options.screen !== false && this.hasConsent("screen")) {
       this.fingerprinters.push(new ScreenFingerprint());
+    }
+
+    // Initialize Canvas fingerprinting
+    if (options.canvas !== false && this.hasConsent("canvas")) {
+      this.fingerprinters.push(new CanvasFingerprint());
+    }
+
+    // Initialize Stable fingerprinting
+    if (options.stable !== false && this.hasConsent("stable")) {
+      this.fingerprinters.push(new StableFingerprint());
     }
 
     // Initialize Behavior fingerprinting
@@ -301,4 +313,3 @@ export class FingerprintService {
 export const createFingerprint = (options?: FingerprintOptions) => {
   return new FingerprintService(options);
 };
-

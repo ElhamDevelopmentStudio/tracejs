@@ -4,6 +4,7 @@ import {
   ConsentRegion,
   ConsentState,
 } from "../interfaces/ConsentOptions";
+import { getNavigator } from "../utils/environment";
 
 /**
  * Service for managing user consent for various fingerprinting methods
@@ -320,7 +321,8 @@ export class ConsentManager {
    */
   private async detectRegion(): Promise<ConsentRegion> {
     // Try to detect by browser locale first
-    const locale = navigator.language || navigator.userLanguage || "";
+    const nav = getNavigator() as (Navigator & { userLanguage?: string }) | null;
+    const locale = nav?.language || nav?.userLanguage || "";
 
     // Map common EU country codes to GDPR
     const euCountries = [

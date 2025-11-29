@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BatteryFingerprint = void 0;
+const environment_1 = require("../utils/environment");
 const BaseFingerprint_1 = require("./BaseFingerprint");
 class BatteryFingerprint extends BaseFingerprint_1.BaseFingerprint {
     constructor(options = {}) {
@@ -22,15 +23,17 @@ class BatteryFingerprint extends BaseFingerprint_1.BaseFingerprint {
         }
     }
     async initBatteryTracking() {
+        const nav = (0, environment_1.getNavigator)();
+        if (!nav || typeof nav.getBattery !== "function") {
+            return;
+        }
         try {
-            if ("getBattery" in navigator) {
-                this.batteryManager = await navigator.getBattery();
-                // Set up event listeners for battery changes
-                this.batteryManager.addEventListener("chargingchange", () => this.handleBatteryChange());
-                this.batteryManager.addEventListener("levelchange", () => this.handleBatteryChange());
-                this.batteryManager.addEventListener("chargingtimechange", () => this.handleBatteryChange());
-                this.batteryManager.addEventListener("dischargingtimechange", () => this.handleBatteryChange());
-            }
+            this.batteryManager = await nav.getBattery();
+            // Set up event listeners for battery changes
+            this.batteryManager.addEventListener("chargingchange", () => this.handleBatteryChange());
+            this.batteryManager.addEventListener("levelchange", () => this.handleBatteryChange());
+            this.batteryManager.addEventListener("chargingtimechange", () => this.handleBatteryChange());
+            this.batteryManager.addEventListener("dischargingtimechange", () => this.handleBatteryChange());
         }
         catch (e) {
             console.error("Battery tracking initialization failed:", e);
@@ -55,7 +58,8 @@ class BatteryFingerprint extends BaseFingerprint_1.BaseFingerprint {
     onBatteryChange(listener) {
         this.batteryChangeListeners.push(listener);
         // Initialize tracking if it wasn't already
-        if (!this.batteryManager && "getBattery" in navigator) {
+        const nav = (0, environment_1.getNavigator)();
+        if (!this.batteryManager && nav && typeof nav.getBattery === "function") {
             this.initBatteryTracking();
         }
         // Return a function to remove the listener
@@ -88,19 +92,21 @@ class BatteryFingerprint extends BaseFingerprint_1.BaseFingerprint {
         return batteryData;
     }
     async getCharacteristics() {
+        const nav = (0, environment_1.getNavigator)();
+        if (!nav || typeof nav.getBattery !== "function") {
+            return {};
+        }
         try {
-            if ("getBattery" in navigator) {
-                const battery = await navigator.getBattery();
-                this.batteryManager = battery; // Store for future use
-                const batteryData = this.getBatteryData();
-                // Return null if no data was collected
-                if (Object.keys(batteryData).length === 0) {
-                    return {};
-                }
-                return {
-                    battery: JSON.stringify(batteryData),
-                };
+            const battery = await nav.getBattery();
+            this.batteryManager = battery; // Store for future use
+            const batteryData = this.getBatteryData();
+            // Return null if no data was collected
+            if (Object.keys(batteryData).length === 0) {
+                return {};
             }
+            return {
+                battery: JSON.stringify(batteryData),
+            };
         }
         catch (e) {
             console.error("Battery fingerprinting failed:", e);

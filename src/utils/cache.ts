@@ -1,3 +1,5 @@
+import { getGlobalWindow, getLocalStorage } from "./environment";
+
 /**
  * Utilities for caching fingerprint data to maintain consistency
  */
@@ -10,18 +12,27 @@ interface CachedData<T> {
   timestamp: number;
 }
 
+const getStorage = (): Storage | null => {
+  return getLocalStorage();
+};
+
 /**
  * Save data to localStorage with the given key and expiration
  * Note: validityPeriod parameter isn't needed here since it's only used when retrieving
  */
 export function saveToCache<T>(key: string, data: T): void {
+  const storage = getStorage();
+  if (!storage) {
+    return;
+  }
+
   try {
     const cacheItem: CachedData<T> = {
       data,
       timestamp: Date.now(),
     };
 
-    localStorage.setItem(key, JSON.stringify(cacheItem));
+    storage.setItem(key, JSON.stringify(cacheItem));
   } catch (error) {
     console.error(`Failed to save data to cache (${key}):`, error);
   }
@@ -35,8 +46,13 @@ export function getFromCache<T>(
   key: string,
   validityPeriod: number = DEFAULT_CACHE_VALIDITY
 ): T | null {
+  const storage = getStorage();
+  if (!storage) {
+    return null;
+  }
+
   try {
-    const cachedItem = localStorage.getItem(key);
+    const cachedItem = storage.getItem(key);
 
     if (!cachedItem) return null;
 
@@ -49,7 +65,7 @@ export function getFromCache<T>(
     }
 
     // Cache expired, remove it
-    localStorage.removeItem(key);
+    storage.removeItem(key);
     return null;
   } catch (error) {
     console.error(`Failed to retrieve data from cache (${key}):`, error);
@@ -62,7 +78,8 @@ export function getFromCache<T>(
  * This ensures fingerprints for the same origin remain stable
  */
 export function generateCacheKey(prefix: string): string {
-  const origin = window.location.origin;
+  const win = getGlobalWindow();
+  const origin = win?.location?.origin ?? "global";
 
   // Create a simple hash of the origin to avoid potential storage issues
   // with special characters or long origins

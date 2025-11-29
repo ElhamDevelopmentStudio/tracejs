@@ -1,27 +1,30 @@
 import { BrowserCharacteristics, FingerprintStrength } from '../interfaces/BrowserCharacteristics';
+import { getDocument, getGlobalWindow, getNavigator } from "../utils/environment";
 import { BaseFingerprint } from './BaseFingerprint';
 
 export class StableFingerprint extends BaseFingerprint {
   protected async getCharacteristics(): Promise<Partial<BrowserCharacteristics>> {
     try {
+      const nav = getNavigator();
+      const win = getGlobalWindow();
       const stableData = {
         // Browser/OS specific - doesn't change during session
-        userAgent: navigator.userAgent,
-        platform: navigator.platform,
-        language: navigator.language,
-        hardwareConcurrency: navigator.hardwareConcurrency,
-        deviceMemory: (navigator as any).deviceMemory,
+        userAgent: nav?.userAgent,
+        platform: nav?.platform,
+        language: nav?.language,
+        hardwareConcurrency: nav?.hardwareConcurrency,
+        deviceMemory: (nav as any)?.deviceMemory,
         
         // Timezone - stable during session
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         
         // Hardware capabilities - stable
-        touchPoints: navigator.maxTouchPoints,
+        touchPoints: nav?.maxTouchPoints,
         
         // Screen properties that don't change with multiple monitors
-        colorDepth: window.screen.colorDepth,
-        pixelDepth: window.screen.pixelDepth,
-        devicePixelRatio: window.devicePixelRatio,
+        colorDepth: win?.screen?.colorDepth,
+        pixelDepth: win?.screen?.pixelDepth,
+        devicePixelRatio: win?.devicePixelRatio,
 
         // WebGL information - hardware specific
         ...await this.getWebGLInfo(),
@@ -42,7 +45,12 @@ export class StableFingerprint extends BaseFingerprint {
 
   private async getWebGLInfo(): Promise<Partial<BrowserCharacteristics>> {
     try {
-      const canvas = document.createElement('canvas');
+      const doc = getDocument();
+      if (!doc?.createElement) {
+        return {};
+      }
+
+      const canvas = doc.createElement('canvas');
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
       
       if (gl) {
@@ -62,7 +70,13 @@ export class StableFingerprint extends BaseFingerprint {
 
   private async getAudioInfo(): Promise<Partial<BrowserCharacteristics>> {
     try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const win = getGlobalWindow() as typeof window & { webkitAudioContext?: typeof AudioContext };
+      const AudioContextCtor = win?.AudioContext || win?.webkitAudioContext;
+      if (!AudioContextCtor) {
+        return {};
+      }
+
+      const audioContext = new AudioContextCtor();
       const sampleRate = audioContext.sampleRate;
       audioContext.close();
       return {
@@ -76,7 +90,12 @@ export class StableFingerprint extends BaseFingerprint {
 
   private async getCanvasInfo(): Promise<Partial<BrowserCharacteristics>> {
     try {
-      const canvas = document.createElement('canvas');
+      const doc = getDocument();
+      if (!doc?.createElement) {
+        return {};
+      }
+
+      const canvas = doc.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
       if (!ctx) return {};

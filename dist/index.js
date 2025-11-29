@@ -2,9 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createFingerprint = exports.FingerprintService = void 0;
 const BatteryFingerprint_1 = require("./services/BatteryFingerprint");
+const CanvasFingerprint_1 = require("./services/CanvasFingerprint");
 const BehaviorFingerprint_1 = require("./services/BehaviorFingerprint");
 const ConsentManager_1 = require("./services/ConsentManager");
 const ScreenFingerprint_1 = require("./services/ScreenFingerprint");
+const StableFingerprint_1 = require("./services/StableFingerprint");
 const cache_1 = require("./utils/cache");
 const entropy_1 = require("./utils/entropy");
 const hash_1 = require("./utils/hash");
@@ -33,6 +35,14 @@ class FingerprintService {
         // Initialize Screen fingerprinting
         if (options.screen !== false && this.hasConsent("screen")) {
             this.fingerprinters.push(new ScreenFingerprint_1.ScreenFingerprint());
+        }
+        // Initialize Canvas fingerprinting
+        if (options.canvas !== false && this.hasConsent("canvas")) {
+            this.fingerprinters.push(new CanvasFingerprint_1.CanvasFingerprint());
+        }
+        // Initialize Stable fingerprinting
+        if (options.stable !== false && this.hasConsent("stable")) {
+            this.fingerprinters.push(new StableFingerprint_1.StableFingerprint());
         }
         // Initialize Behavior fingerprinting
         if (options.behavior !== false && this.hasConsent("behavior")) {
