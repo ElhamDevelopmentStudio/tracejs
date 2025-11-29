@@ -7,8 +7,9 @@ const mockFingerprintData = (name: string) => ({
   }),
 });
 
-let CanvasFingerprintMock: jest.Mock;
-let StableFingerprintMock: jest.Mock;
+// Use var to avoid TDZ issues with jest.mock hoisting
+var CanvasFingerprintMock: jest.Mock;
+var StableFingerprintMock: jest.Mock;
 
 jest.mock("./services/CanvasFingerprint", () => {
   CanvasFingerprintMock = jest.fn().mockImplementation(() =>
