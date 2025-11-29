@@ -2,10 +2,16 @@ import { BrowserCharacteristics, FingerprintStrength } from '../interfaces/Brows
 import { getDocument, getGlobalWindow, getNavigator } from "../utils/environment";
 import { BaseFingerprint } from './BaseFingerprint';
 
+type NavigatorWithMemory = Navigator & { deviceMemory?: number };
+type WebGLDebugInfo = {
+  UNMASKED_VENDOR_WEBGL: number;
+  UNMASKED_RENDERER_WEBGL: number;
+};
+
 export class StableFingerprint extends BaseFingerprint {
   protected async getCharacteristics(): Promise<Partial<BrowserCharacteristics>> {
     try {
-      const nav = getNavigator();
+      const nav = getNavigator() as NavigatorWithMemory | null;
       const win = getGlobalWindow();
       const stableData = {
         // Browser/OS specific - doesn't change during session
@@ -13,7 +19,7 @@ export class StableFingerprint extends BaseFingerprint {
         platform: nav?.platform,
         language: nav?.language,
         hardwareConcurrency: nav?.hardwareConcurrency,
-        deviceMemory: (nav as any)?.deviceMemory,
+        deviceMemory: nav?.deviceMemory,
         
         // Timezone - stable during session
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -51,14 +57,14 @@ export class StableFingerprint extends BaseFingerprint {
       }
 
       const canvas = doc.createElement('canvas');
-      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      const gl = (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null;
       
       if (gl) {
-        const debugInfo = (gl as any).getExtension('WEBGL_debug_renderer_info');
+        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info') as WebGLDebugInfo | null;
         if (debugInfo) {
           return {
-            gpuVendor: (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
-            gpuRenderer: (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+            gpuVendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) as string,
+            gpuRenderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) as string
           };
         }
       }

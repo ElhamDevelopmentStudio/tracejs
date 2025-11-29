@@ -44,7 +44,7 @@ class StableFingerprint extends BaseFingerprint_1.BaseFingerprint {
                 return {};
             }
             const canvas = doc.createElement('canvas');
-            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            const gl = (canvas.getContext('webgl') || canvas.getContext('experimental-webgl'));
             if (gl) {
                 const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
                 if (debugInfo) {
