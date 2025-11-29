@@ -2,7 +2,16 @@ import '@testing-library/jest-dom';
 import { StableFingerprint } from './StableFingerprint';
 
 // Mock browser APIs
-type MockNavigator = Partial<Navigator> & { deviceMemory?: number; getBattery: jest.Mock };
+type MockNavigator = {
+  userAgent: string;
+  platform: string;
+  language: string;
+  hardwareConcurrency: number;
+  deviceMemory?: number;
+  maxTouchPoints: number;
+  getBattery: jest.Mock;
+};
+
 const mockNavigator: MockNavigator = {
   userAgent: '',
   platform: '',
@@ -13,14 +22,14 @@ const mockNavigator: MockNavigator = {
   getBattery: jest.fn(),
 };
 
-const mockScreen: Partial<Screen> = {
+const mockScreen = {
   colorDepth: 24,
   pixelDepth: 24,
-};
+} as Screen;
 
 type MockWindow = Partial<Window> & {
   devicePixelRatio: number;
-  screen: Partial<Screen>;
+  screen: Screen;
   AudioContext: jest.Mock;
   matchMedia: jest.Mock;
 };
@@ -28,7 +37,11 @@ type MockWindow = Partial<Window> & {
 const mockWindow: MockWindow = {
   devicePixelRatio: 1,
   screen: mockScreen,
-  AudioContext: jest.fn(),
+  navigator: mockNavigator as unknown as Navigator,
+  AudioContext: jest.fn().mockImplementation(() => ({
+    sampleRate: 44100,
+    close: jest.fn(),
+  })),
   matchMedia: jest.fn(),
 };
 
@@ -53,19 +66,38 @@ const mockWebGLContext = {
 
 describe('StableFingerprint', () => {
   let stableFingerprint: StableFingerprint;
+  let consoleErrorSpy: jest.SpyInstance;
 
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
+    consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => undefined);
     
     // Setup global mocks
-    global.navigator = mockNavigator as unknown as Navigator;
-    global.window = mockWindow as unknown as Window;
-    global.document = {
+    Object.defineProperty(global, "navigator", {
+      configurable: true,
+      value: mockNavigator as unknown as Navigator,
+    });
+    Object.defineProperty(global, "window", {
+      configurable: true,
+      value: mockWindow as unknown as Window & typeof globalThis,
+    });
+    const mockDocument: Partial<Document> = {
       createElement: jest.fn().mockReturnValue(mockCanvas),
-    } as unknown as Document;
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+    };
+
+    Object.defineProperty(global, "document", {
+      configurable: true,
+      value: mockDocument as Document,
+    });
     
     stableFingerprint = new StableFingerprint();
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
   });
 
   describe('Different Browsers', () => {
@@ -91,9 +123,11 @@ describe('StableFingerprint', () => {
     ];
 
     test.each(browsers)('should generate unique fingerprint for $name', async (browser) => {
-      mockNavigator.userAgent = browser.ua;
-      mockNavigator.platform = browser.platform;
-      mockNavigator.language = browser.language;
+      Object.assign(mockNavigator, {
+        userAgent: browser.ua,
+        platform: browser.platform,
+        language: browser.language,
+      });
       
       const result = await stableFingerprint.getFingerprint();
       expect(result).toBeTruthy();
@@ -104,7 +138,7 @@ describe('StableFingerprint', () => {
   describe('Different Hardware Configurations', () => {
     beforeEach(() => {
       // Reset mocks before each test
-      Object.defineProperty(window.navigator, 'hardwareConcurrency', {
+      Object.defineProperty(mockWindow.navigator as Navigator, 'hardwareConcurrency', {
         configurable: true,
         value: undefined
       });
@@ -112,7 +146,7 @@ describe('StableFingerprint', () => {
 
     it('should generate unique fingerprint for High-end PC', async () => {
       const config = { cores: 16 };
-      Object.defineProperty(window.navigator, 'hardwareConcurrency', {
+      Object.defineProperty(mockWindow.navigator as Navigator, 'hardwareConcurrency', {
         configurable: true,
         value: config.cores
       });
@@ -200,7 +234,10 @@ describe('StableFingerprint', () => {
 
   describe('Error Handling', () => {
     test('should handle missing navigator properties', async () => {
-      global.navigator = {} as unknown as Navigator;
+      Object.defineProperty(global, "navigator", {
+        configurable: true,
+        value: {} as Navigator,
+      });
       const result = await stableFingerprint.getFingerprint();
       expect(result).toBeTruthy();
     });
@@ -228,13 +265,13 @@ describe('StableFingerprint', () => {
       const stableFingerprint2 = new StableFingerprint();
       
       // Mock different hardware configurations
-      Object.defineProperty(window.navigator, 'hardwareConcurrency', {
+      Object.defineProperty(mockWindow.navigator as Navigator, 'hardwareConcurrency', {
         configurable: true,
         value: 8
       });
       const firstConfig = await stableFingerprint1.getFingerprint();
       
-      Object.defineProperty(window.navigator, 'hardwareConcurrency', {
+      Object.defineProperty(mockWindow.navigator as Navigator, 'hardwareConcurrency', {
         configurable: true,
         value: 16
       });
