@@ -56,7 +56,7 @@ describe("hashString", () => {
 
   it("falls back when SubtleCrypto throws", async () => {
     const mockDigest = jest.fn().mockRejectedValue(new Error("no secure context"));
-    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => undefined);
 
     setGlobalCrypto({
       subtle: { digest: mockDigest },
